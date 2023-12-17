@@ -1,0 +1,60 @@
+# Create base Eezze image
+FROM node:16-alpine as eezze
+
+# Node has a group and user on uid: 1000, called; node
+
+# Install typescript and related dependencies
+RUN apk --no-cache add git mysql-client openssh-client bash && \
+    npm install -g ts-node typescript nodemon
+
+ARG SSH_PRIVATE_KEY
+
+USER node
+
+RUN mkdir ~/.ssh/ && echo "${SSH_PRIVATE_KEY}" | base64 -d > ~/.ssh/id_rsa && chmod 600 ~/.ssh/id_rsa
+RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+USER root
+
+# Create project Eezze-API
+FROM eezze as eezze-api
+
+RUN mkdir -p /usr/www && chown -R node:node /usr/www
+
+USER node
+WORKDIR /usr/www/api
+
+ARG BUILD_FORCE=1
+RUN git clone git@github.com:eezze/eezze-generator-backend-non-ts.git .
+RUN npm i
+
+WORKDIR /usr/www/api/plugins/eezze
+
+ARG BUILD_FORCE=1
+RUN git clone git@github.com:eezze/eezze-ts-plugin.git .
+
+WORKDIR /var/www/eezze/eezze-assets
+ARG BUILD_FORCE=1
+RUN git clone git@github.com:eezze/eezze-assets.git .
+WORKDIR /usr/www/api
+
+# Create project Eezze Generator Front End
+FROM eezze as eezze-generator
+
+RUN mkdir -p /usr/www && chown -R node:node /usr/www
+
+USER node
+WORKDIR /usr/www/gui
+
+ARG BUILD_FORCE=1
+RUN git clone git@github.com:eezze/fe-final-version.git .
+RUN npm i
+
+WORKDIR /usr/www/gui/plugins/visual-entity-editor
+RUN git clone git@github.com:eezze/visual-entity-editor.git .
+RUN npm i
+
+WORKDIR /usr/www/gui
+
+# Remove SSH keys
+# RUN rm -rf ~/.ssh/

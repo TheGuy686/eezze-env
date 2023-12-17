@@ -1,0 +1,7 @@
+.env.local
+.env.production
+.env.local.ngrok
+node_modules
+.vagrant
+.aws
+*.log

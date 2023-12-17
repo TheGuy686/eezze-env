@@ -1,0 +1,395 @@
+- name: Install Docker
+  # in case of a local install, uncomment below
+  # hosts: localhost
+  # connection: local
+  hosts: all
+
+  vars:
+    terraform_version: "1.6.4" # Specify the desired version
+    terraform_url: "https://releases.hashicorp.com/terraform/{{ terraform_version }}/terraform_{{ terraform_version }}_linux_amd64.zip"
+    terraform_install_path: "/usr/local/bin"
+
+  tasks:
+  - name: Set connection timeout
+    set_fact:
+      ansible_connection_timeout: 300
+
+  - name: Update apt packages
+    become: true
+    apt:
+      update_cache: true
+
+  - name: Install packages needed for Docker
+    become: true
+    apt:
+      name: "{{ docker_dep_packages }}"
+      state: present
+
+  - name: Add Docker GPG apt Key
+    become: true
+    apt_key:
+      url: https://download.docker.com/linux/ubuntu/gpg
+      state: present
+
+  - name: Add Docker APT repository
+    become: true
+    apt_repository:
+      repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ubuntu_version }} stable
+      state: present
+
+  - name: Install Docker
+    become: true
+    package:
+      name: "{{ docker_packages }}"
+      state: present
+
+  - name: Symlink docker related packages to /usr/local/bin
+    become: true
+    ansible.builtin.file:
+      path: "{{ item.path }}"
+      src: "{{ item.src }}"
+      force: true
+      state: "link"
+    loop: "{{ docker_symlink }}"
+
+  - name: Download AWS CLI
+    become: true
+    get_url:
+      url: "https://d1vvhvl2y92vvt.cloudfront.net/awscli-exe-linux-x86_64.zip"
+      dest: "/tmp/awscliv2.zip"
+
+  - name: Unzip AWS CLI package
+    become: true
+    unarchive:
+      src: "/tmp/awscliv2.zip"
+      dest: "/tmp/"
+      remote_src: true
+
+  - name: Install AWS CLI
+    become: true
+    command:
+      cmd: "./install --update"
+      chdir: "/tmp/aws"
+
+  - name: Get NodeSource distribution setup script
+    become: true
+    get_url:
+      url: "https://deb.nodesource.com/setup_16.x"
+      dest: "/tmp/setup_16.x"
+      mode: '0755'
+
+  - name: Execute setup script
+    become: true
+    command: "/tmp/setup_16.x"
+
+  - name: Install Node.js
+    become: true
+    apt:
+      name: nodejs
+      update_cache: true
+      state: present
+
+  - name: Download Terraform
+    become: true
+    get_url:
+      url: "{{ terraform_url }}"
+      dest: "/tmp/terraform_{{ terraform_version }}_linux_amd64.zip"
+      mode: '0755'
+
+  - name: Extract Terraform
+    become: true
+    unarchive:
+      src: "/tmp/terraform_{{ terraform_version }}_linux_amd64.zip"
+      dest: "{{ terraform_install_path }}"
+      remote_src: yes
+      creates: "{{ terraform_install_path }}/terraform"
+
+  - name: Check Terraform version
+    become: true
+    command: "{{ terraform_install_path }}/terraform version"
+    register: terraform_version_output
+
+  - name: Show Terraform version
+    become: true
+    debug:
+      var: terraform_version_output.stdout_lines
+
+  - name: Create docker group
+    become: true
+    group:
+      name: "docker"
+      state: present
+
+  - name: Add {{ user }} to docker group
+    become: true
+    ansible.builtin.user:
+      name: "{{ user }}"
+      groups: docker
+      append: true
+    register: add_to_docker_group_result
+
+  - name: Include reset connection tasks
+    ansible.builtin.include_tasks: reset_connection.yml
+    when: add_to_docker_group_result.changed == true
+
+  - name: Configure Docker daemon options (json)
+    become: true
+    ansible.builtin.template:
+      src: "./etc/docker/daemon.json.j2"
+      dest: "/etc/docker/daemon.json"
+      owner: "root"
+      group: "root"
+      mode: "0644"
+
+  - name: Restart Docker service
+    become: true
+    service:
+      name: docker
+      state: restarted
+
+  - name: Add Ansible PPA
+    become: true
+    apt_repository:
+      repo: ppa:ansible/ansible
+      state: present
+
+  - name: Install Ansible
+    become: true
+    apt:
+      name: ansible
+      state: latest
+
+  - name: Install Ctop
+    become: true
+    get_url:
+      url: https://github.com/bcicen/ctop/releases/download/v{{ ctop_version }}/ctop-{{ ctop_version }}-linux-amd64
+      dest: "/usr/local/bin/ctop"
+      mode: 0755
+
+  - name: Ensure ~/.aws directory exists
+    become: false
+    file:
+        path: "/home/{{ user }}/.aws"
+        state: directory
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: '0755'
+
+  - name: Ensure ~/.aws/credentials file exists
+    become: false
+    file:
+      path: "/home/{{ user }}/.aws/credentials"
+      state: touch
+      owner: "{{ user }}"
+      group: "{{ user }}"
+      mode: '0644'
+
+  - name: Extract multithreadlabs credentials from local machine
+    become: false
+    shell: "grep -A 2 '\\[multithreadlabs\\]' ~/.aws/credentials"
+    register: multithreadlabs_credentials
+    delegate_to: localhost
+    ignore_errors: yes
+
+  - name: Write multithreadlabs credentials to remote machine
+    become: false
+    lineinfile:
+      path: /home/{{ user }}/.aws/credentials
+      line: "{{ item }}"
+    with_items: "{{ multithreadlabs_credentials.stdout_lines | default([]) }}"
+    when: multithreadlabs_credentials.stdout is defined
+
+  - name: Write AWS config
+    become: false
+    copy:
+      content: |
+        [default]
+        region=us-east-1
+        output=json
+
+        [profile eezze-prod]
+        region=us-east-1
+        role_arn=arn:aws:iam::294648980860:role/Admin
+        source_profile=multithreadlabs
+      dest: /home/{{ user }}/.aws/config
+
+  - name: Set GIT_AUTHOR_NAME
+    become: true
+    lineinfile:
+      path: /etc/environment
+      line: 'GIT_AUTHOR_NAME=Eezze'
+
+  - name: Set GIT_AUTHOR_EMAIL
+    become: true
+    lineinfile:
+      path: /etc/environment
+      line: 'GIT_AUTHOR_EMAIL=support@eezze.io'
+
+  - name: Set GIT_COMMITTER_NAME
+    become: true
+    lineinfile:
+      path: /etc/environment
+      line: 'GIT_COMMITTER_NAME=Eezze'
+
+  - name: Set GIT_COMMITTER_EMAIL
+    become: true
+    lineinfile:
+      path: /etc/environment
+      line: 'GIT_COMMITTER_EMAIL=support@eezze.io'
+
+  - name: Copy private key file
+    become: false
+    copy:
+      src: "~/.ssh/{{ github_ssh_filename }}"
+      dest: ~/.ssh/{{ github_ssh_filename }}
+      mode: 0600
+
+  - name: Add SSH settings for GitHub - Avoids broken pipe errors git push/pull
+    ansible.builtin.lineinfile:
+      path: "/home/{{ user }}/.ssh/config"
+      line: "{{ item.line }}"
+      owner: "{{ user }}"
+      group: "{{ user }}"
+      mode: '0600'
+      create: true
+    loop:
+      - { line: "Host github.com" }
+      - { line: "  ServerAliveInterval 300" }
+      - { line: "  ServerAliveCountMax 5" }
+      - { line: "  IPQoS throughput" }
+
+  - name: Clone the GitHub repository
+    become: false
+    git:
+      repo: "{{ github_repo }}"
+      dest: "{{ github_destination_dir }}"
+      accept_hostkey: true
+      key_file: ~/.ssh/id_ed25519
+      force: true
+
+  - name: Create Eezze directories requiring root permissions
+    become: true
+    shell: "cd {{ github_destination_dir }}/docker/eezze && ./createDirectoriesAsRoot.sh"
+
+  - name: Create Docker mounts service file; autocreates /tmp/docker-mnts directory
+    become: true
+    copy:
+      dest: /etc/systemd/system/docker-mounts.service
+      content: |
+        [Unit]
+        Description=Setup Docker mounts
+        Before=docker.service
+
+        [Service]
+        Type=oneshot
+        ExecStart=/bin/bash -c 'mkdir -p /tmp/docker-mnts/eezze && chmod 770 -R /tmp/docker-mnts && chown 1000:1000 -R /tmp/docker-mnts'
+
+        [Install]
+        WantedBy=multi-user.target
+      mode: '0644'
+
+  - name: Set the IP address and adapter name variables
+    set_fact:
+      ip_address: "{{ ansible_enp0s8.ipv4.address if ansible_enp0s8.ipv4.address is defined else ansible_default_ipv4.address }}"
+      adapter_name: "{{ 'enp0s8' if ansible_enp0s8.ipv4.address is defined else ansible_default_ipv4.interface }}"
+
+  - name: Machine IP address and adapter
+    debug:
+      msg: "The IP address is {{ ip_address }} from adapter {{ adapter_name }}"
+
+  - name: Create IP address service
+    become: true
+    copy:
+      content: |
+        [Unit]
+        Description=Update IP Address
+        After=network.target
+        Before=docker.service
+
+        [Service]
+        Type=oneshot
+        ExecStart=/etc/systemd/system/ip-address.sh
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+      dest: /etc/systemd/system/ip-address.service
+      mode: '0644'
+
+  - name: Create IP address shell script
+    become: true
+    copy:
+      content: |
+        #!/bin/bash
+
+        IP_ADDRESS=$(ip addr show {{ adapter_name }} | grep -Po 'inet \K[\d.]+')
+
+        # Update environment file
+        if grep -qF "HOST_IP=" {{ environment_file }}; then
+          sed -i "s/HOST_IP=.*/HOST_IP=$IP_ADDRESS/" {{ environment_file }}
+        else
+          echo "HOST_IP=$IP_ADDRESS" >> {{ environment_file }}
+        fi
+
+        # Update bashrc file
+        if grep -qF "export HOST_IP=" {{ bashrc_file }}; then
+          sed -i "s/export HOST_IP=.*/export HOST_IP=$IP_ADDRESS/" {{ bashrc_file }}
+        else
+          echo "export HOST_IP=$IP_ADDRESS" >> {{ bashrc_file }}
+        fi
+
+         # Add HOST_IP check to .bashrc
+        echo "if [[ -n \$SSH_CONNECTION ]] ; then env | grep HOST_IP; fi" >> {{ bashrc_file }}
+
+      dest: /etc/systemd/system/ip-address.sh
+      mode: '0755'
+
+  - name: Reload Systemd daemon
+    become: true
+    systemd:
+      daemon_reload: true
+
+  - name: Enable ip-address service
+    become: true
+    systemd:
+      name: ip-address
+      enabled: true
+      state: started
+
+  - name: Enable Docker mounts service
+    become: true
+    systemd:
+      name: docker-mounts
+      enabled: true
+      state: started
+
+  - name: Set OpenSSH SSH idle timeout to 1 hour.
+    become: yes
+    ansible.builtin.lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^ClientAliveInterval'
+      line: 'ClientAliveInterval 3600'
+      state: present
+
+  - name: Set ClientAliveCountMax
+    become: yes
+    ansible.builtin.lineinfile:
+      path: /etc/ssh/sshd_config
+      regexp: '^ClientAliveCountMax'
+      line: 'ClientAliveCountMax 0'
+      state: present
+
+  - name: Reboot the system
+    become: true
+    reboot:
+      reboot_timeout: 300
+      msg: "Initiating system restart"
+      post_reboot_delay: 30
+
+  - name: Wait for SSH connectivity
+    wait_for_connection:
+      delay: 10
+      timeout: 300
+
+  - name: Installing Eezze Docker Containers
+    shell: "cd {{ github_destination_dir }} && ./setup-docker-ansible.sh"

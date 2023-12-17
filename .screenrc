@@ -1,0 +1,32 @@
+#!/bin/bash
+
+screen -dmS eezze
+
+# Set titles for each window
+screen -aS eezze  -T xterm -X screen bash -c "cd /user_data/projects/eezze-docker-env && exec bash" -t "Docker Run"&
+screen -aS eezze  -T xterm -X screen bash -c "cd ~/docker/api && exec bash"&
+screen -aS eezze  -T xterm -X screen bash -c "cd ~/docker/api && exec bash"&
+screen -aS eezze  -T xterm -X screen bash -c "cd ~/docker/api && exec bash"&
+screen -aS eezze  -T xterm -X screen bash -c "cd ~/docker/api && exec bash"&
+screen -aS eezze  -T xterm -X screen bash -c "cd ~/docker/web && exec bash"&
+screen -aS eezze  -T xterm -X screen bash -c "cd ~/docker/web && exec bash"&
+
+screen -S eezze -p 1 -X title "Docker Run"&
+screen -S eezze -p 2 -X title "BE Code"&
+screen -S eezze -p 3 -X title "BE Logs"&
+screen -S eezze -p 4 -X title "BE WS Logs"&
+screen -S eezze -p 5 -X title "Logger Logs"&
+screen -S eezze -p 6 -X title "FE Code"&
+screen -S eezze -p 7 -X title "FE Logs"&
+
+# Remove the extra window at index 0
+screen -S eezze -p 0 -X kill
+
+screen -S eezze -d -p 1 -X stuff "npm run dev-local\n"&
+screen -S eezze -d -p 3 -X stuff "npm run api-logs\n"&
+screen -S eezze -d -p 4 -X stuff "npm run ws-stats-logs\n"&
+screen -S eezze -d -p 5 -X stuff "npm run ws-logger-logs\n"&
+screen -S eezze -d -p 7 -X stuff "npm run logs\n"&
+
+# Detach from the session
+screen -d

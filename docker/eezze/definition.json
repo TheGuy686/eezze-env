@@ -1,0 +1,609 @@
+{
+    "containerDefinitions": [
+        {
+            "environment": [
+                {
+                    "name": "MYSQL_ROOT_PASSWORD",
+                    "value": "Eu]>b632FcAef(~<3"
+                }
+            ],
+            "essential": true,
+            "image": "mysql:5.7.12",
+            "logConfiguration": {
+                "options": {
+                    "max-size": "10m"
+                }
+            },
+            "mountPoints": [
+                {
+                    "containerPath": "/var/lib/mysql",
+                    "sourceVolume": "Db_Data"
+                }
+            ],
+            "name": "db",
+            "portMappings": [
+                {
+                    "containerPort": 3306,
+                    "hostPort": 3306
+                }
+            ]
+        },
+        {
+            "environment": [
+                {
+                    "name": "PMA_ARBITRARY",
+                    "value": "1"
+                }
+            ],
+            "essential": true,
+            "image": "phpmyadmin:latest",
+            "logConfiguration": {
+                "options": {
+                    "max-size": "10m"
+                }
+            },
+            "name": "phpmyadmin",
+            "portMappings": [
+                {
+                    "containerPort": 80,
+                    "hostPort": 8080
+                }
+            ]
+        },
+        {
+            "command": [
+                "bash",
+                "-c",
+                "mysql --user='root' --host='db' --password='Eu]>b632FcAef(~<3' < './docs/delta.sql' && npm run watch"
+            ],
+            "environment": [
+                {
+                    "name": "HOST_IP",
+                    "value": "192.168.1.38"
+                },
+                {
+                    "name": "EEZZE_HOST",
+                    "value": "http://192.168.1.38:2000"
+                },
+                {
+                    "name": "LOG_SERVER_HOST",
+                    "value": "192.168.1.38:2000"
+                },
+                {
+                    "name": "DEFAULT_REST_SERVER_PORT",
+                    "value": "2002"
+                },
+                {
+                    "name": "DEFAULT_REST_SERVER_ES_PORT",
+                    "value": "64000"
+                },
+                {
+                    "name": "DEFAULT_WS_SERVER_PORT",
+                    "value": "3000"
+                },
+                {
+                    "name": "DEFAULT_WS_SERVER_ES_PORT",
+                    "value": "64001"
+                },
+                {
+                    "name": "DEFAULT_WS_STATS_SERVER_PORT",
+                    "value": "3001"
+                },
+                {
+                    "name": "DEFAULT_WS_STATS_SERVER_ES_PORT",
+                    "value": "3001"
+                },
+                {
+                    "name": "DEFAULT_FE_SERVER_PORT",
+                    "value": "2000"
+                },
+                {
+                    "name": "DEFAULT_WS_LOGGING_SERVER_ES_PORT",
+                    "value": "64003"
+                }
+            ],
+            "essential": true,
+            "logConfiguration": {
+                "options": {
+                    "max-size": "10m"
+                }
+            },
+            "mountPoints": [
+                {
+                    "containerPath": "/code",
+                    "sourceVolume": "_"
+                },
+                {
+                    "containerPath": "/var/log",
+                    "sourceVolume": "Logs_Rest"
+                },
+                {
+                    "containerPath": "/var/www/eezze/eezze-assets",
+                    "sourceVolume": "Codevolumeassets"
+                },
+                {
+                    "containerPath": "/tmp/eezze",
+                    "sourceVolume": "Eezze_Tmp"
+                }
+            ],
+            "name": "rest",
+            "portMappings": [
+                {
+                    "containerPort": 2002,
+                    "hostPort": 2002
+                }
+            ],
+            "user": "user:user"
+        },
+        {
+            "command": [
+                "bash",
+                "-c",
+                "node penv.js && npm run dev"
+            ],
+            "environment": [
+                {
+                    "name": "NUXT_HOST",
+                    "value": "0.0.0.0"
+                },
+                {
+                    "name": "NUXT_PORT",
+                    "value": "2000"
+                },
+                {
+                    "name": "WS_HOST",
+                    "value": "ws://192.168.1.38:3000/v1"
+                },
+                {
+                    "name": "WS_STATS_HOST",
+                    "value": "ws://192.168.1.38:3001/v1"
+                },
+                {
+                    "name": "API_HOST",
+                    "value": "http://192.168.1.38:2002"
+                },
+                {
+                    "name": "FE_HOST",
+                    "value": "0.0.0.0"
+                },
+                {
+                    "name": "FE_PORT",
+                    "value": "2000"
+                },
+                {
+                    "name": "FE_PORT_J",
+                    "value": "2100"
+                },
+                {
+                    "name": "ASSETS_HOST",
+                    "value": "http://192.168.1.38:100"
+                },
+                {
+                    "name": "DEFAULT_WS_LOGGING_SERVER_PORT",
+                    "value": "3100"
+                },
+                {
+                    "name": "HOST_IP",
+                    "value": "192.168.1.38"
+                }
+            ],
+            "essential": true,
+            "logConfiguration": {
+                "options": {
+                    "max-size": "10m"
+                }
+            },
+            "mountPoints": [
+                {
+                    "containerPath": "/code",
+                    "sourceVolume": "_"
+                },
+                {
+                    "containerPath": "/var/log",
+                    "sourceVolume": "Logs_Web"
+                },
+                {
+                    "containerPath": "/usr/www/gui",
+                    "sourceVolume": "Codevolumeweb"
+                },
+                {
+                    "containerPath": "/tmp/eezze",
+                    "sourceVolume": "Eezze_Tmp"
+                }
+            ],
+            "name": "web",
+            "portMappings": [
+                {
+                    "containerPort": 2000,
+                    "hostPort": 2000
+                }
+            ],
+            "user": "user:user"
+        },
+        {
+            "command": [
+                "bash",
+                "-c",
+                "cd ./plugins/visual-entity-editor && npm run build && node content-server.js"
+            ],
+            "environment": [
+                {
+                    "name": "NUXT_HOST",
+                    "value": "0.0.0.0"
+                },
+                {
+                    "name": "NUXT_PORT",
+                    "value": "2000"
+                },
+                {
+                    "name": "WS_HOST",
+                    "value": "ws://192.168.1.38:3000/v1"
+                },
+                {
+                    "name": "WS_STATS_HOST",
+                    "value": "ws://192.168.1.38:3001/v1"
+                },
+                {
+                    "name": "API_HOST",
+                    "value": "http://192.168.1.38:2002"
+                },
+                {
+                    "name": "FE_HOST",
+                    "value": "192.168.1.38"
+                },
+                {
+                    "name": "FE_PORT",
+                    "value": "2000"
+                },
+                {
+                    "name": "FE_PORT_J",
+                    "value": "2100"
+                },
+                {
+                    "name": "FE_PORT_VEE",
+                    "value": "2200"
+                },
+                {
+                    "name": "HOST_IP",
+                    "value": "192.168.1.38"
+                },
+                {
+                    "name": "ASSETS_HOST",
+                    "value": "http://192.168.1.38:100"
+                },
+                {
+                    "name": "DEFAULT_WS_LOGGING_SERVER_PORT",
+                    "value": "3100"
+                }
+            ],
+            "essential": true,
+            "logConfiguration": {
+                "options": {
+                    "max-size": "10m"
+                }
+            },
+            "mountPoints": [
+                {
+                    "containerPath": "/code",
+                    "sourceVolume": "_"
+                },
+                {
+                    "containerPath": "/var/log",
+                    "sourceVolume": "Logs_Web_Vee"
+                },
+                {
+                    "containerPath": "/usr/www/gui",
+                    "sourceVolume": "Codevolumeweb"
+                },
+                {
+                    "containerPath": "/tmp/eezze",
+                    "sourceVolume": "Eezze_Tmp"
+                }
+            ],
+            "name": "web_visual_entity_editor",
+            "portMappings": [
+                {
+                    "containerPort": 2200,
+                    "hostPort": 2200
+                }
+            ],
+            "user": "user:user"
+        },
+        {
+            "command": [
+                "npm",
+                "run",
+                "wgen"
+            ],
+            "environment": [
+                {
+                    "name": "HOST_IP",
+                    "value": "192.168.1.38"
+                },
+                {
+                    "name": "EEZZE_HOST",
+                    "value": "http://192.168.1.38:2000"
+                },
+                {
+                    "name": "LOG_SERVER_HOST",
+                    "value": "192.168.1.38:2000"
+                },
+                {
+                    "name": "DEFAULT_WS_SERVER_PORT",
+                    "value": "3000"
+                },
+                {
+                    "name": "DEFAULT_REST_SERVER_PORT",
+                    "value": "2002"
+                },
+                {
+                    "name": "DEFAULT_WS_STATS_SERVER_PORT",
+                    "value": "3001"
+                },
+                {
+                    "name": "DEFAULT_FE_SERVER_PORT",
+                    "value": "2000"
+                },
+                {
+                    "name": "DEFAULT_WS_LOGGING_SERVER_PORT",
+                    "value": "3100"
+                }
+            ],
+            "essential": true,
+            "logConfiguration": {
+                "options": {
+                    "max-size": "10m"
+                }
+            },
+            "mountPoints": [
+                {
+                    "containerPath": "/code",
+                    "sourceVolume": "_"
+                },
+                {
+                    "containerPath": "/var/log",
+                    "sourceVolume": "Logs_Ws"
+                },
+                {
+                    "containerPath": "/usr/www/api",
+                    "sourceVolume": "Codevolumeapi"
+                },
+                {
+                    "containerPath": "/var/www/eezze/eezze-assets",
+                    "sourceVolume": "Codevolumeassets"
+                },
+                {
+                    "containerPath": "/tmp/eezze",
+                    "sourceVolume": "Eezze_Tmp"
+                }
+            ],
+            "name": "ws",
+            "portMappings": [
+                {
+                    "containerPort": 3000,
+                    "hostPort": 3000
+                }
+            ],
+            "user": "user:user"
+        },
+        {
+            "command": [
+                "npm",
+                "run",
+                "wlogger"
+            ],
+            "environment": [
+                {
+                    "name": "HOST_IP",
+                    "value": "192.168.1.38"
+                },
+                {
+                    "name": "EEZZE_HOST",
+                    "value": "http://192.168.1.38:2000"
+                },
+                {
+                    "name": "LOG_SERVER_HOST",
+                    "value": "192.168.1.38:2000"
+                },
+                {
+                    "name": "DEFAULT_WS_SERVER_PORT",
+                    "value": "3000"
+                },
+                {
+                    "name": "DEFAULT_REST_SERVER_PORT",
+                    "value": "2002"
+                },
+                {
+                    "name": "DEFAULT_WS_STATS_SERVER_PORT",
+                    "value": "3001"
+                },
+                {
+                    "name": "DEFAULT_FE_SERVER_PORT",
+                    "value": "2000"
+                },
+                {
+                    "name": "DEFAULT_WS_LOGGING_SERVER_PORT",
+                    "value": "3100"
+                }
+            ],
+            "essential": true,
+            "logConfiguration": {
+                "options": {
+                    "max-size": "10m"
+                }
+            },
+            "mountPoints": [
+                {
+                    "containerPath": "/code",
+                    "sourceVolume": "_"
+                },
+                {
+                    "containerPath": "/var/log",
+                    "sourceVolume": "Logs_Ws"
+                },
+                {
+                    "containerPath": "/usr/www/api",
+                    "sourceVolume": "Codevolumeapi"
+                },
+                {
+                    "containerPath": "/var/www/eezze/eezze-assets",
+                    "sourceVolume": "Codevolumeassets"
+                },
+                {
+                    "containerPath": "/tmp/eezze",
+                    "sourceVolume": "Eezze_Tmp"
+                }
+            ],
+            "name": "ws-logger",
+            "portMappings": [
+                {
+                    "containerPort": 3100,
+                    "hostPort": 3100
+                }
+            ],
+            "user": "user:user"
+        },
+        {
+            "command": [
+                "npm",
+                "run",
+                "wstats"
+            ],
+            "environment": [
+                {
+                    "name": "HOST_IP",
+                    "value": "192.168.1.38"
+                },
+                {
+                    "name": "EEZZE_HOST",
+                    "value": "http://192.168.1.38:2000"
+                },
+                {
+                    "name": "LOG_SERVER_HOST",
+                    "value": "192.168.1.38:2000"
+                },
+                {
+                    "name": "DEFAULT_WS_SERVER_PORT",
+                    "value": "3000"
+                },
+                {
+                    "name": "DEFAULT_REST_SERVER_PORT",
+                    "value": "2002"
+                },
+                {
+                    "name": "DEFAULT_WS_STATS_SERVER_PORT",
+                    "value": "3001"
+                },
+                {
+                    "name": "DEFAULT_FE_SERVER_PORT",
+                    "value": "2000"
+                },
+                {
+                    "name": "DEFAULT_WS_LOGGING_SERVER_PORT",
+                    "value": "3100"
+                }
+            ],
+            "essential": true,
+            "logConfiguration": {
+                "options": {
+                    "max-size": "10m"
+                }
+            },
+            "mountPoints": [
+                {
+                    "containerPath": "/code",
+                    "sourceVolume": "_"
+                },
+                {
+                    "containerPath": "/var/log",
+                    "sourceVolume": "Logs_Stats"
+                },
+                {
+                    "containerPath": "/usr/www/api",
+                    "sourceVolume": "Codevolumeapi"
+                },
+                {
+                    "containerPath": "/tmp/eezze",
+                    "sourceVolume": "Eezze_Tmp"
+                }
+            ],
+            "name": "ws-stats",
+            "portMappings": [
+                {
+                    "containerPort": 3001,
+                    "hostPort": 3001
+                }
+            ],
+            "user": "user:user"
+        }
+    ],
+    "family": "",
+    "volumes": [
+        {
+            "host": {
+                "sourcePath": "."
+            },
+            "name": "_"
+        },
+        {
+            "host": {
+                "sourcePath": "logs_rest"
+            },
+            "name": "Logs_Rest"
+        },
+        {
+            "host": {
+                "sourcePath": "codevolumeassets"
+            },
+            "name": "Codevolumeassets"
+        },
+        {
+            "host": {
+                "sourcePath": "eezze_tmp"
+            },
+            "name": "Eezze_Tmp"
+        },
+        {
+            "host": {
+                "sourcePath": "logs_ws"
+            },
+            "name": "Logs_Ws"
+        },
+        {
+            "host": {
+                "sourcePath": "codevolumeapi"
+            },
+            "name": "Codevolumeapi"
+        },
+        {
+            "host": {
+                "sourcePath": "logs_stats"
+            },
+            "name": "Logs_Stats"
+        },
+        {
+            "host": {
+                "sourcePath": "logs_web"
+            },
+            "name": "Logs_Web"
+        },
+        {
+            "host": {
+                "sourcePath": "codevolumeweb"
+            },
+            "name": "Codevolumeweb"
+        },
+        {
+            "host": {
+                "sourcePath": "logs_web_vee"
+            },
+            "name": "Logs_Web_Vee"
+        },
+        {
+            "host": {
+                "sourcePath": "db_data"
+            },
+            "name": "Db_Data"
+        }
+    ]
+}

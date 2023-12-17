@@ -1,0 +1,380 @@
+version: "3.5"
+
+services:
+  rest:
+    user: "user:user"
+    logging:
+      options:
+        max-size: 10m
+    build:
+      context:  ./
+      target: eezze-api
+      args:
+        - SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}
+        - BUILD_FORCE=${BUILD_FORCE}
+        - USER_ID=1000
+        - GROUP_ID=1000
+    command: >
+      bash -c "mysql --user='root' --host='db' --password='Eu]>b632FcAef(~<3' < './docs/delta.sql' && npm run watch"
+    ports:
+      - ${DEFAULT_REST_SERVER_PORT}:${DEFAULT_REST_SERVER_PORT}
+      - ${DEFAULT_REST_SERVER_ES_PORT}:${DEFAULT_REST_SERVER_ES_PORT}
+    volumes:
+      - .:/code
+      - logs_rest:/var/log
+      - codevolumeapi:/usr/www/api:consistent
+      - codevolumeassets:/var/www/eezze
+      - eezze_tmp:/tmp/eezze
+    environment:
+      HOST_IP: ${HOST_IP} 
+      EEZZE_HOST: http://${HOST_IP}:${EEZZE_HOST_PORT}
+
+      LOG_SERVER_HOST: ${HOST_IP}:${LOG_SERVER_PORT}
+
+      DEFAULT_WS_SERVER_PORT: ${DEFAULT_WS_SERVER_PORT}
+      DEFAULT_REST_SERVER_PORT: ${DEFAULT_REST_SERVER_PORT}
+      DEFAULT_REST_SERVER_ES_PORT: ${DEFAULT_REST_SERVER_ES_PORT}
+      DEFAULT_WS_STATS_SERVER_PORT: ${DEFAULT_WS_STATS_SERVER_PORT}
+      DEFAULT_FE_SERVER_PORT: ${DEFAULT_FE_SERVER_PORT}
+      DEFAULT_WS_LOGGING_SERVER_PORT: ${DEFAULT_WS_LOGGING_SERVER_PORT}
+    restart: always
+    depends_on:
+      - db
+
+  ws:
+    user: "user:user"
+    logging:
+      options:
+        max-size: 10m
+    build:
+      context: ./
+      target: eezze-api
+      args:
+        - SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}
+        - BUILD_FORCE=${BUILD_FORCE}
+        - USER_ID=1000
+        - GROUP_ID=1000
+    command: npm run wgen
+    ports:
+      - ${DEFAULT_WS_SERVER_PORT}:${DEFAULT_WS_SERVER_PORT}
+      - ${DEFAULT_WS_SERVER_ES_PORT}:${DEFAULT_WS_SERVER_ES_PORT}
+    volumes:
+      - .:/code
+      - logs_ws:/var/log
+      - codevolumeapi:/usr/www/api
+      - codevolumeassets:/var/www/eezze
+      - eezze_tmp:/tmp/eezze
+    environment:
+      HOST_IP: ${HOST_IP} 
+      EEZZE_HOST:  http://${HOST_IP}:${EEZZE_HOST_PORT}
+
+      LOG_SERVER_HOST: ${HOST_IP}:${LOG_SERVER_PORT}
+
+      DEFAULT_WS_SERVER_PORT: ${DEFAULT_WS_SERVER_PORT}
+      DEFAULT_WS_SERVER_ES_PORT: ${DEFAULT_WS_SERVER_ES_PORT}
+      DEFAULT_REST_SERVER_PORT: ${DEFAULT_REST_SERVER_PORT}
+      DEFAULT_WS_STATS_SERVER_PORT: ${DEFAULT_WS_STATS_SERVER_PORT}
+      DEFAULT_FE_SERVER_PORT: ${DEFAULT_FE_SERVER_PORT}
+      DEFAULT_WS_LOGGING_SERVER_PORT: ${DEFAULT_WS_LOGGING_SERVER_PORT}
+    restart: always
+  
+  ws-logger:
+    user: "user:user"
+    logging:
+      options:
+        max-size: 10m
+    build:
+      context: ./
+      target: eezze-api
+      args:
+        - SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}
+        - BUILD_FORCE=${BUILD_FORCE}
+        - USER_ID=1000
+        - GROUP_ID=1000 
+    command: npm run wlogger
+    ports:
+      - ${DEFAULT_WS_LOGGING_SERVER_PORT}:${DEFAULT_WS_LOGGING_SERVER_PORT}
+      - ${DEFAULT_WS_LOGGING_SERVER_ES_PORT}:${DEFAULT_WS_LOGGING_SERVER_ES_PORT}
+    volumes:
+      - .:/code
+      - logs_ws:/var/log
+      - codevolumeapi:/usr/www/api
+      - codevolumeassets:/var/www/eezze
+      - eezze_tmp:/tmp/eezze
+    environment:
+      HOST_IP: ${HOST_IP} 
+      EEZZE_HOST:  http://${HOST_IP}:${EEZZE_HOST_PORT}
+
+      LOG_SERVER_HOST: ${HOST_IP}:${LOG_SERVER_PORT}
+
+      DEFAULT_WS_SERVER_PORT: ${DEFAULT_WS_SERVER_PORT}
+      DEFAULT_REST_SERVER_PORT: ${DEFAULT_REST_SERVER_PORT}
+      DEFAULT_WS_STATS_SERVER_PORT: ${DEFAULT_WS_STATS_SERVER_PORT}
+      DEFAULT_FE_SERVER_PORT: ${DEFAULT_FE_SERVER_PORT}
+      DEFAULT_WS_LOGGING_SERVER_PORT: ${DEFAULT_WS_LOGGING_SERVER_PORT}
+      DEFAULT_WS_LOGGING_SERVER_ES_PORT: ${DEFAULT_WS_LOGGING_SERVER_ES_PORT}
+    restart: always
+
+  ws-stats:
+    user: "user:user"
+    logging:
+      options:
+        max-size: 10m
+    build:
+      context: ./
+      target: eezze-api
+      args:
+        - SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}
+        - BUILD_FORCE=${BUILD_FORCE}
+        - USER_ID=1000
+        - GROUP_ID=1000
+    command: npm run wstats
+    ports:
+      - ${DEFAULT_WS_STATS_SERVER_PORT}:${DEFAULT_WS_STATS_SERVER_PORT}
+      - ${DEFAULT_WS_STATS_SERVER_ES_PORT}:${DEFAULT_WS_STATS_SERVER_ES_PORT}
+    volumes:
+      - .:/code
+      - logs_stats:/var/log
+      - codevolumeapi:/usr/www/api
+      - eezze_tmp:/tmp/eezze
+    environment:
+      HOST_IP: ${HOST_IP} 
+      EEZZE_HOST:  http://${HOST_IP}:${EEZZE_HOST_PORT}
+
+      LOG_SERVER_HOST: ${HOST_IP}:${LOG_SERVER_PORT}
+
+      DEFAULT_WS_SERVER_PORT: ${DEFAULT_WS_SERVER_PORT}
+      DEFAULT_REST_SERVER_PORT: ${DEFAULT_REST_SERVER_PORT}
+      DEFAULT_WS_STATS_SERVER_PORT: ${DEFAULT_WS_STATS_SERVER_PORT}
+      DEFAULT_WS_STATS_SERVER_ES_PORT: ${DEFAULT_WS_STATS_SERVER_ES_PORT}
+      DEFAULT_FE_SERVER_PORT: ${DEFAULT_FE_SERVER_PORT}
+      DEFAULT_WS_LOGGING_SERVER_PORT: ${DEFAULT_WS_LOGGING_SERVER_PORT}
+    restart: always
+
+  web:
+    user: "user:user"
+    logging:
+      options:
+        max-size: 10m
+    build:
+      context: ./
+      target: eezze-generator
+      args:
+        - SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}
+        - BUILD_FORCE=${BUILD_FORCE}
+        - USER_ID=1000
+        - GROUP_ID=1000
+    command: >
+      bash -c "node penv.js && npm run dev"
+    ports:
+      - 2000:2000
+    volumes:
+      - .:/code
+      - logs_web:/var/log
+      - codevolumeweb:/usr/www/gui
+      - eezze_tmp:/tmp/eezze
+    environment:
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 2000
+      WS_HOST: ws://${HOST_IP}:${DEFAULT_WS_SERVER_PORT}/v1
+      WS_STATS_HOST: ws://${HOST_IP}:${DEFAULT_WS_STATS_SERVER_PORT}/v1
+      API_HOST: http://${HOST_IP}:${DEFAULT_REST_SERVER_PORT}
+      FE_HOST: 0.0.0.0
+      FE_PORT: 2000
+      FE_PORT_J: 2100
+      ASSETS_HOST: http://${HOST_IP}:100
+      DEFAULT_WS_LOGGING_SERVER_PORT: ${DEFAULT_WS_LOGGING_SERVER_PORT}
+      HOST_IP: ${HOST_IP}
+    restart: always
+    depends_on:
+      - db
+      - rest
+      - ws
+
+  web_visual_entity_editor:
+    user: "user:user"
+    logging:
+      options:
+        max-size: 10m
+    build:
+      context: ./
+      target: eezze-generator
+      args:
+        - SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}
+        - BUILD_FORCE=${BUILD_FORCE}
+        - USER_ID=1000
+        - GROUP_ID=1000
+    command: >
+      bash -c "cd ./plugins/visual-entity-editor && npm run build && node content-server.js"
+    ports:
+     - 2200:2200
+    volumes:
+      - .:/code
+      - logs_web_vee:/var/log
+      - codevolumeweb:/usr/www/gui
+      - eezze_tmp:/tmp/eezze
+    environment:
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 2000
+      WS_HOST: ws://${HOST_IP}:${DEFAULT_WS_SERVER_PORT}/v1
+      WS_STATS_HOST: ws://${HOST_IP}:${DEFAULT_WS_STATS_SERVER_PORT}/v1
+      API_HOST: http://${HOST_IP}:${DEFAULT_REST_SERVER_PORT}
+      FE_HOST: ${HOST_IP}
+      FE_PORT: 2000
+      FE_PORT_J: 2100
+      FE_PORT_VEE: 2200
+      HOST_IP: ${HOST_IP}
+      ASSETS_HOST: http://${HOST_IP}:100
+      DEFAULT_WS_LOGGING_SERVER_PORT: ${DEFAULT_WS_LOGGING_SERVER_PORT}
+    restart: always
+    depends_on:
+      - db
+      - rest
+      - ws
+
+  openapi:
+    user: "user:user"
+    logging:
+      options:
+        max-size: 10m
+    build:
+      context: ./
+      target: eezze-generator
+      args:
+        - SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}
+        - BUILD_FORCE=${BUILD_FORCE}
+        - USER_ID=1000
+        - GROUP_ID=1000
+    command: >
+      bash -c "cd ./plugins/openapi-viewer && npm run dev"
+    ports:
+     - 2001:2001
+    volumes:
+      - .:/code
+      - logs_web_vee:/var/log
+      - codevolumeweb:/usr/www/gui
+      - eezze_tmp:/tmp/eezze
+    environment:
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 2000
+      WS_HOST: ws://${HOST_IP}:${DEFAULT_WS_SERVER_PORT}/v1
+      WS_STATS_HOST: ws://${HOST_IP}:${DEFAULT_WS_STATS_SERVER_PORT}/v1
+      API_HOST: http://${HOST_IP}:${DEFAULT_REST_SERVER_PORT}
+      FE_HOST: ${HOST_IP}
+      FE_PORT: 2000
+      FE_PORT_J: 2100
+      FE_PORT_VEE: 2200
+      HOST_IP: ${HOST_IP}
+      ASSETS_HOST: http://${HOST_IP}:100
+      DEFAULT_WS_LOGGING_SERVER_PORT: ${DEFAULT_WS_LOGGING_SERVER_PORT}
+    restart: always
+    depends_on:
+      - db
+      - rest
+      - ws    
+
+  regex:
+    user: "user:user"
+    logging:
+      options:
+        max-size: 10m
+    build:
+      context: ./
+      target: eezze-generator
+      args:
+        - SSH_PRIVATE_KEY=${SSH_PRIVATE_KEY}
+        - BUILD_FORCE=${BUILD_FORCE}
+        - USER_ID=1000
+        - GROUP_ID=1000
+    command: >
+      bash -c "cd ./plugins/vue-regexr && npm run dev"
+    ports:
+     - 2010:2010
+    volumes:
+      - .:/code
+      - logs_web_vee:/var/log
+      - codevolumeweb:/usr/www/gui
+      - eezze_tmp:/tmp/eezze
+    environment:
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 2000
+      WS_HOST: ws://${HOST_IP}:${DEFAULT_WS_SERVER_PORT}/v1
+      WS_STATS_HOST: ws://${HOST_IP}:${DEFAULT_WS_STATS_SERVER_PORT}/v1
+      API_HOST: http://${HOST_IP}:${DEFAULT_REST_SERVER_PORT}
+      FE_HOST: ${HOST_IP}
+      FE_PORT: 2000
+      FE_PORT_J: 2100
+      FE_PORT_VEE: 2200
+      HOST_IP: ${HOST_IP}
+      ASSETS_HOST: http://${HOST_IP}:100
+      DEFAULT_WS_LOGGING_SERVER_PORT: ${DEFAULT_WS_LOGGING_SERVER_PORT}
+    restart: always
+    depends_on:
+      - db
+      - rest
+      - ws        
+  
+  db:
+    logging:
+      options:
+        max-size: 10m
+    image: eezzeio/mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - 3306:3306
+      - 8080:8080
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Eu]>b632FcAef(~<3
+
+  phpmyadmin:
+    logging:
+      options:
+        max-size: 10m
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - 80:80
+    environment:
+      - PMA_ARBITRARY=1
+volumes:
+  logs_stats:
+    external:
+      name: eezze_logs_stats
+
+  logs_rest:
+    external:
+      name: eezze_logs_rest
+
+  logs_ws:
+    external:
+      name: eezze_logs_ws
+
+  logs_web:
+    external:
+      name: eezze_logs_web
+
+  logs_web_vee:
+    external:
+      name: eezze_logs_web_vee
+
+  db_data:
+    external:
+      name: eezze_db_data
+
+  codevolumeapi:
+    external:
+      name: eezze_codevolumeapi
+
+  codevolumeweb:
+    external:
+      name: eezze_codevolumeweb
+
+  codevolumeassets:
+    external:
+      name: eezze_codevolumeassets
+
+  eezze_tmp:
+    external:
+      name: eezze_eezze_tmp

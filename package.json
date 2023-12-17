@@ -1,0 +1,18 @@
+{
+  "name": "docker-env",
+  "version": "1.0.0",
+  "description": "Setup Eezze Generator projects using Docker",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "setup_docker_network": "docker network create -d bridge --subnet 192.168.0.0/24 --gateway 192.168.0.1 dockernet",
+    "dev-local": "mkdir -p /tmp/docker-mnts/eezze; clear; docker-compose -f ./docker/eezze/docker-compose.yml down; docker-compose -f ./docker/eezze/docker-compose.yml --env-file './docker/eezze/.env' up",
+    "scri": "./screen.sh",
+    "update-all": "./update-all-repos.sh"
+  },
+  "author": "Rolf Streefkerk",
+  "license": "ISC",
+  "dependencies": {
+    "npm": "^9.6.7"
+  }
+}

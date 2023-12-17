@@ -1,0 +1,9 @@
+# config.yml
+box: "ubuntu/jammy64"
+network: "wlp0s20f3"
+memory: 8192
+cpus: 6
+disk_size: "20000"
+ansible:
+  playbook: "../ansible/playbooks/docker-install/playbook.yml"
+  inventory_path: "../ansible/inventory.ini"

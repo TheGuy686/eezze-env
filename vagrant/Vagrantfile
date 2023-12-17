@@ -1,0 +1,60 @@
+require 'yaml'
+
+Vagrant.configure("2") do |config|
+  settings = YAML.load_file('config.yml')
+
+  # Global settings (if applicable)
+  # config.vm.box = settings['box']
+  # config.vm.network "public_network", bridge: settings['network'], use_dhcp_assigned_default_route: true
+
+  # Eezze main project
+  config.vm.define "eezze" do |eezze|
+    eezze.vm.box = settings['box']
+    eezze.vm.network "public_network", bridge: settings['network'], use_dhcp_assigned_default_route: true
+    eezze.vm.hostname = "eezze"
+
+    eezze.disksize.size = settings['disk_size']
+
+    eezze.vm.provider "virtualbox" do |vb|
+      vb.name = "eezze"
+      vb.memory = settings['memory']
+      vb.cpus = settings['cpus']
+    end
+
+    eezze.vm.provision "shell", inline: <<-SHELL
+      sudo apt-get update
+      sudo apt-get upgrade -y
+      sudo apt-get install -y openssh-server
+    SHELL
+
+    eezze.vm.provision "ansible" do |ansible|
+      ansible.playbook = settings['ansible']['playbook']
+    end
+
+    eezze.trigger.after :up do |trigger|
+      trigger.name = "Fetching IP and updating /etc/hosts"
+      trigger.run = {inline: "bash ./set-hosts-file.sh"}
+    end
+  end
+
+  # Eezze project machine
+  config.vm.define "eezzeProject" do |eezzeProject|
+    eezzeProject.vm.box = settings['box']
+    eezzeProject.vm.network "public_network", bridge: settings['network'], use_dhcp_assigned_default_route: true
+    eezzeProject.vm.hostname = "eezzeProject"
+
+    eezzeProject.disksize.size = settings['disk_size']
+
+    eezzeProject.vm.provider "virtualbox" do |vb|
+      vb.name = "eezzeProject"
+      vb.memory = settings['memory']
+      vb.cpus = settings['cpus']
+    end
+
+    eezzeProject.vm.provision "shell", inline: <<-SHELL
+      sudo apt-get update
+      sudo apt-get upgrade -y
+      sudo apt-get install -y openssh-server
+    SHELL
+  end
+end
